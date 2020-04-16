@@ -26,6 +26,7 @@
 
 #include "screenshot.h"
 #include "dbusservice/dbusscreenshotservice.h"
+#include <iostream>
 
 DWIDGET_USE_NAMESPACE
 #define QT_NO_DEBUG_OUTPUT
@@ -70,7 +71,7 @@ int main(int argc, char *argv[]) {
          qApp->quit();
         return 0;
     }
-
+    
     w.startScreenshot();
 
     return a.exec();

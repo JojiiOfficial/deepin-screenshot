@@ -94,7 +94,6 @@ public slots:
 
     void startScreenshot();
     void shotFullScreen();
-    void shotCurrentImg();
     void shotImgWidthEffect();
     void saveScreenshot();
     bool saveAction(const QPixmap &pix);

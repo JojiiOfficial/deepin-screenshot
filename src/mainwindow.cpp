@@ -213,8 +213,7 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *ev) {
         m_moving = false;
 
         if (m_sizeTips->isVisible()) {
-            m_sizeTips->updateTips(QPoint(m_recordX, m_recordY),
-                                   QString("%1X%2").arg(m_recordWidth).arg(m_recordHeight));
+            m_sizeTips->updateTips(QPoint(m_recordX, m_recordY), QString("%1X%2").arg(m_recordWidth).arg(m_recordHeight));
         }
 
         if (!m_isFirstReleaseButton) {
@@ -364,7 +363,7 @@ void MainWindow::mouseMoveEvent(QMouseEvent *ev) {
             }
 
             updateCursor(ev);
-            int mousePosition =  getDirection(ev);
+            int mousePosition = getDirection(ev);
             bool drawPoint = mousePosition != ResizeDirection::Moving;
             if (drawPoint != m_needDrawSelectedPoint) {
                 m_needDrawSelectedPoint = drawPoint;
@@ -728,35 +727,6 @@ void MainWindow::shotFullScreen() {
     m_resultPixmap = getPixmapofRect(m_backgroundRect);
 }
 
-void MainWindow::shotCurrentImg() {
-    if (m_recordWidth == 0 || m_recordHeight == 0)
-        return;
-
-    m_needDrawSelectedPoint = false;
-    m_drawNothing = true;
-    update();
-
-    QEventLoop eventloop1;
-    QTimer::singleShot(100, &eventloop1, SLOT(quit()));
-    eventloop1.exec();
-
-    shotFullScreen();
-    if (m_isShapesWidgetExist) {
-        m_shapesWidget->hide();
-    }
-
-    this->hide();
-    emit hideScreenshotUI();
-
-    const qreal ratio = this->devicePixelRatioF();
-    QRect target( m_recordX * ratio,
-                  m_recordY * ratio,
-                  m_recordWidth * ratio,
-                  m_recordHeight * ratio );
-
-    m_resultPixmap = m_resultPixmap.copy(target);
-}
-
 void MainWindow::shotImgWidthEffect() {
     if (m_recordWidth == 0 || m_recordHeight == 0)
         return;
@@ -772,7 +742,12 @@ void MainWindow::shotImgWidthEffect() {
 
 void MainWindow::saveScreenshot() {
     const qreal ratio = this->devicePixelRatioF();
-    std::cout << m_recordX*ratio << ";" << m_recordY*ratio << ";" << m_recordWidth*ratio << ";" << m_recordHeight*ratio << std::endl;
+    QRect widgetRect = this->geometry();
+
+    int x = abs(widgetRect.x() + m_recordX * ratio);
+    int y = abs(m_recordY * ratio - widgetRect.y());
+
+    std::cout << x << ";" << y << ";" << m_recordWidth*ratio << ";" << m_recordHeight*ratio << ";" << m_screenNum << std::endl;
     exitApp();
 }
 
