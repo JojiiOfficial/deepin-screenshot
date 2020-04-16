@@ -745,7 +745,7 @@ void MainWindow::saveScreenshot() {
     QRect widgetRect = this->geometry();
 
     int x = abs(widgetRect.x() + m_recordX * ratio);
-    int y = abs(m_recordY * ratio - widgetRect.y());
+    int y = abs(m_recordY * ratio + widgetRect.y());
 
     std::cout << x << ";" << y << ";" << m_recordWidth*ratio << ";" << m_recordHeight*ratio << ";" << m_screenNum << std::endl;
     exitApp();
