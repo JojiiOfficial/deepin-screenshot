@@ -27,7 +27,6 @@
 
 #include <QApplication>
 #include <QButtonGroup>
-#include <QDebug>
 #include <QCursor>
 
 namespace {
@@ -100,11 +99,9 @@ void MajToolBar::initWidgets()
 
     connect(this, &MajToolBar::shapePressed, this, [=](QString shape) {
         if (shape == "rectangle") {
-            qDebug() << "rect clicked!";
             rectBtn->click();
         } else if (shape == "oval") {
             ovalBtn->click();
-            qDebug() << "oval clicked!";
         } else if (shape == "arrow") {
             if (arrowBtn->isVisible())
                 arrowBtn->click();

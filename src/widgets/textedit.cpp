@@ -19,7 +19,6 @@
 
 #include "textedit.h"
 
-#include <QDebug>
 #include <QPen>
 #include <QScrollBar>
 #include <QPixmap>
@@ -128,7 +127,6 @@ void TextEdit::keepReadOnlyStatus()
 
 void TextEdit::mousePressEvent(QMouseEvent *e)
 {
-    qDebug() << "TextEdit mousePressEvent" << e->pos();
     if (!this->isReadOnly()) {
         QPlainTextEdit::mousePressEvent(e);
         return;

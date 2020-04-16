@@ -27,6 +27,7 @@
 #include "dbusinterface/dbusnotify.h"
 
 #include <dscreenwindowsutil.h>
+#include <iostream>
 
 DWM_USE_NAMESPACE
 
@@ -44,7 +45,6 @@ void Screenshot::startScreenshot()
 {
     initUI();
     m_window->show();
-
     m_window->startScreenshot();
 }
 

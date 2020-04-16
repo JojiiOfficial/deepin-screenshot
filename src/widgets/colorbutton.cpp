@@ -20,7 +20,6 @@
 #include "colorbutton.h"
 
 #include <QPainter>
-#include <QDebug>
 
 const QSize BUTTON_SIZE = QSize(16, 16);
 const int  ELLIPSE_MARGIN = 1;
@@ -36,7 +35,6 @@ ColorButton::ColorButton(QColor bgColor, QWidget *parent)
 void ColorButton::setColorBtnChecked() {
     update();
     if (this->isChecked()) {
-        qDebug() << "updatePaintColor:" << m_bgColor;
         emit updatePaintColor(m_bgColor);
     }
 }

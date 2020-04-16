@@ -50,41 +50,36 @@
 
 DWIDGET_USE_NAMESPACE
 
+#define QT_NO_DEBUG_OUTPUT
+
 namespace {
-const int RECORD_MIN_SIZE = 10;
-const int SPACING = 10;
-const int TOOLBAR_Y_SPACING = 8;
-const int CURSOR_WIDTH = 8;
-const int CURSOR_HEIGHT = 18;
-const int INDICATOR_WIDTH =  59;
-const qreal RESIZEPOINT_WIDTH = 15;
+    const int RECORD_MIN_SIZE = 10;
+    const int SPACING = 10;
+    const int TOOLBAR_Y_SPACING = 8;
+    const int CURSOR_WIDTH = 8;
+    const int CURSOR_HEIGHT = 18;
+    const int INDICATOR_WIDTH =  59;
+    const qreal RESIZEPOINT_WIDTH = 15;
 }
 
-MainWindow::MainWindow(QWidget *parent)
-    : QLabel(parent)
-{
+MainWindow::MainWindow(QWidget *parent) : QLabel(parent) {
     setAttribute(Qt::WA_TranslucentBackground);
     setWindowFlags(Qt::X11BypassWindowManagerHint);
 
     installEventFilter(this);
 
     connect(this, &MainWindow::releaseEvent, this, [=]{
-        qDebug() << "release event !!!";
         m_keyboardReleased = true;
         m_keyboardGrabbed =  windowHandle()->setKeyboardGrabEnabled(false);
-        qDebug() << "keyboardGrabbed:" << m_keyboardGrabbed;
         removeEventFilter(this);
     });
 
     connect(this, &MainWindow::hideScreenshotUI, this, &MainWindow::hide);
 }
 
-MainWindow::~MainWindow()
-{
-}
+MainWindow::~MainWindow() {}
 
-void MainWindow::initOriginUI()
-{
+void MainWindow::initOriginUI() {
     this->setFocus();
     setMouseTracking(true);
 
@@ -132,8 +127,7 @@ void MainWindow::initOriginUI()
 
 }
 
-void MainWindow::initSecondUI()
-{
+void MainWindow::initSecondUI() {
     for (auto wid : DWindowManagerHelper::instance()->currentWorkspaceWindowIdList()) {
         if (wid == winId()) continue;
 
@@ -146,32 +140,9 @@ void MainWindow::initSecondUI()
     }
 
     m_configSettings =  ConfigSettings::instance();
-    m_toolBar = new ToolBar(this);
-    m_toolBar->hide();
-    m_menuController = new MenuController(this);
-
-    connect(m_toolBar, &ToolBar::buttonChecked, this,  [=](QString shape){
-        if (m_isShapesWidgetExist && shape != "color") {
-            m_shapesWidget->setCurrentShape(shape);
-        } else if (shape != "color") {
-            initShapeWidget(shape);
-            m_isShapesWidgetExist = true;
-        }
-    });
-
-    connect(m_toolBar, &ToolBar::requestSaveScreenshot, this,
-            &MainWindow::saveScreenshot);
-    connect(m_menuController, &MenuController::shapePressed, m_toolBar,
-            &ToolBar::shapePressed);
-    connect(m_menuController, &MenuController::saveBtnPressed, m_toolBar,
-            &ToolBar::saveBtnPressed);
-    connect(m_toolBar, &ToolBar::heightChanged, this, &MainWindow::updateToolBarPos);
-    connect(m_menuController, &MenuController::menuNoFocus, this, &MainWindow::activateWindow);
-    connect(m_toolBar, &ToolBar::closed, this, &MainWindow::exitApp);
 }
 
-void MainWindow::initDBusInterface()
-{
+void MainWindow::initDBusInterface() {
     m_controlCenterDBInterface = new DBusControlCenter(this);
     m_notifyDBInterface = new DBusNotify(this);
     m_notifyDBInterface->CloseNotification(0);
@@ -181,248 +152,24 @@ void MainWindow::initDBusInterface()
     m_interfaceExist = true;
 }
 
-void MainWindow::initShortcut()
-{
-    QShortcut* rectSC = new QShortcut(QKeySequence("Alt+1"), this);
-    QShortcut* ovalSC = new QShortcut(QKeySequence("Alt+2"), this);
-    QShortcut* arrowSC = new QShortcut(QKeySequence("Alt+3"), this);
-    QShortcut* lineSC = new QShortcut(QKeySequence("Alt+4"), this);
-    QShortcut* textSC = new QShortcut(QKeySequence("Alt+5"), this);
-    QShortcut* colorSC = new QShortcut(QKeySequence("Alt+6"), this);
+void MainWindow::initShortcut(){ }
 
-    connect(rectSC, &QShortcut::activated, this, [=]{
-        emit m_toolBar->shapePressed("rectangle");
-    });
-    connect(ovalSC, &QShortcut::activated, this, [=]{
-        emit m_toolBar->shapePressed("oval");
-    });
-    connect(arrowSC, &QShortcut::activated, this, [=]{
-        emit m_toolBar->shapePressed("arrow");
-    });
-    connect(lineSC, &QShortcut::activated, this, [=]{
-        emit m_toolBar->shapePressed("line");
-    });
-    connect(textSC, &QShortcut::activated, this, [=]{
-        emit m_toolBar->shapePressed("text");
-    });
-    connect(colorSC, &QShortcut::activated, this, [=]{
-        emit m_toolBar->shapePressed("color");
-    });
-
-    if (isCommandExist("dman")) {
-        QShortcut* helpSC = new QShortcut(QKeySequence("F1"), this);
-        helpSC->setAutoRepeat(false);
-        connect(helpSC,  SIGNAL(activated()), this, SLOT(onHelp()));
-    }
-}
-
-void MainWindow::keyPressEvent(QKeyEvent *keyEvent)
-{
+void MainWindow::keyPressEvent(QKeyEvent *keyEvent) {
     if (keyEvent->key() == Qt::Key_Return){
         // Save screenshot on enter
         expressSaveScreenshot();
     }else if (keyEvent->key() == Qt::Key_Escape ) {
-        if (m_isShapesWidgetExist) {
-            if (m_shapesWidget->textEditIsReadOnly()) {
-                return;
-            }
-        }
-        qDebug() << "Key_Escape pressed: app quit!";
-        exitApp();
-    } else if (keyEvent->modifiers() == (Qt::ShiftModifier | Qt::ControlModifier)) {
-        if (keyEvent->key() == Qt::Key_Question) {
-            onViewShortcut();
-        }
-    } else if (qApp->keyboardModifiers() & Qt::ControlModifier) {
-        if (keyEvent->key() == Qt::Key_Z) {
-            qDebug() << "SDGF: ctrl+z !!!";
-            emit unDo();
-        }
-    }
-
-    bool needRepaint = false;
-    if (m_isShapesWidgetExist) {
-        if (keyEvent->key() == Qt::Key_Escape) {
-            exitApp();
-            return  ;
-        }
-
-        if (keyEvent->key() == Qt::Key_Shift) {
-            m_isShiftPressed =  true;
-            m_shapesWidget->setShiftKeyPressed(m_isShiftPressed);
-        }
-
-        if (keyEvent->modifiers() == (Qt::ShiftModifier | Qt::ControlModifier)) {
-            if (keyEvent->key() == Qt::Key_Left) {
-                m_shapesWidget->microAdjust("Ctrl+Shift+Left");
-            } else if (keyEvent->key() == Qt::Key_Right) {
-                m_shapesWidget->microAdjust("Ctrl+Shift+Right");
-            } else if (keyEvent->key() == Qt::Key_Up) {
-                m_shapesWidget->microAdjust("Ctrl+Shift+Up");
-            } else if (keyEvent->key() == Qt::Key_Down) {
-                m_shapesWidget->microAdjust("Ctrl+Shift+Down");
-            }
-        } else if (qApp->keyboardModifiers() & Qt::ControlModifier) {
-            if (keyEvent->key() == Qt::Key_Left) {
-                m_shapesWidget->microAdjust("Ctrl+Left");
-            } else if (keyEvent->key() == Qt::Key_Right) {
-                m_shapesWidget->microAdjust("Ctrl+Right");
-            } else if (keyEvent->key() == Qt::Key_Up) {
-                m_shapesWidget->microAdjust("Ctrl+Up");
-            } else if (keyEvent->key() == Qt::Key_Down) {
-                m_shapesWidget->microAdjust("Ctrl+Down");
-            } else if (keyEvent->key() == Qt::Key_C) {
-                ConfigSettings::instance()->setValue("save", "save_op", SaveAction::SaveToClipboard);
-                saveScreenshot();
-            } else if (keyEvent->key() == Qt::Key_S) {
-                expressSaveScreenshot();
-            }
-        }  else {
-            if (keyEvent->key() == Qt::Key_Left) {
-                m_shapesWidget->microAdjust("Left");
-            } else if (keyEvent->key() == Qt::Key_Right) {
-                m_shapesWidget->microAdjust("Right");
-            } else if (keyEvent->key() == Qt::Key_Up) {
-                m_shapesWidget->microAdjust("Up");
-            } else if (keyEvent->key() == Qt::Key_Down) {
-                m_shapesWidget->microAdjust("Down");
-            }
-        }
-
-        if (keyEvent->key() == Qt::Key_Delete || keyEvent->key() == Qt::Key_Backspace) {
-            emit  deleteShapes();
-        } else {
-            qDebug() << "ShapeWidget Exist keyEvent:" << keyEvent->key();
-        }
-        return  ;
-    }
-
-    if (m_mouseStatus == ShotMouseStatus::Normal) {
-        if (keyEvent->modifiers() == (Qt::ShiftModifier | Qt::ControlModifier)) {
-
-            if (keyEvent->key() == Qt::Key_Left) {
-                m_recordX = std::max(0, m_recordX + 1);
-                m_recordWidth = std::max(std::min(m_recordWidth - 1,
-                                                  m_backgroundRect.width()), RECORD_MIN_SIZE);
-
-                needRepaint = true;
-            } else if (keyEvent->key() == Qt::Key_Right) {
-                m_recordWidth = std::max(std::min(m_recordWidth - 1,
-                                                  m_backgroundRect.width()), RECORD_MIN_SIZE);
-
-                needRepaint = true;
-            } else if (keyEvent->key() == Qt::Key_Up) {
-                m_recordY = std::max(0, m_recordY + 1);
-                m_recordHeight = std::max(std::min(m_recordHeight - 1,
-                                                   m_backgroundRect.height()), RECORD_MIN_SIZE);
-
-                needRepaint = true;
-            } else if (keyEvent->key() == Qt::Key_Down) {
-                m_recordHeight = std::max(std::min(m_recordHeight - 1,
-                                                   m_backgroundRect.height()), RECORD_MIN_SIZE);
-
-                needRepaint = true;
-            }
-        } else if (qApp->keyboardModifiers() & Qt::ControlModifier) {
-            if (keyEvent->key() == Qt::Key_S) {
-                expressSaveScreenshot();
-            }
-
-            if (keyEvent->key() == Qt::Key_C) {
-                ConfigSettings::instance()->setValue("save", "save_op", SaveAction::SaveToClipboard);
-                saveScreenshot();
-            }
-
-            if (keyEvent->key() == Qt::Key_Left) {
-                m_recordX = std::max(0, m_recordX - 1);
-                m_recordWidth = std::max(std::min(m_recordWidth + 1,
-                                                  m_backgroundRect.width()), RECORD_MIN_SIZE);
-
-                needRepaint = true;
-            } else if (keyEvent->key() == Qt::Key_Right) {
-                m_recordWidth = std::max(std::min(m_recordWidth + 1,
-                                                  m_backgroundRect.width()), RECORD_MIN_SIZE);
-
-                needRepaint = true;
-            } else if (keyEvent->key() == Qt::Key_Up) {
-                m_recordY = std::max(0, m_recordY - 1);
-                m_recordHeight = std::max(std::min(m_recordHeight + 1,
-                                                   m_backgroundRect.height()), RECORD_MIN_SIZE);
-
-                needRepaint = true;
-            } else if (keyEvent->key() == Qt::Key_Down) {
-                m_recordHeight = std::max(std::min(m_recordHeight + 1,
-                                                   m_backgroundRect.height()), RECORD_MIN_SIZE);
-
-                needRepaint = true;
-            }
-        } else {
-            if (keyEvent->key() == Qt::Key_Left) {
-                m_recordX = std::max(0, m_recordX - 1);
-
-                needRepaint = true;
-            } else if (keyEvent->key() == Qt::Key_Right) {
-                m_recordX = std::min(m_backgroundRect.width() - m_recordWidth,
-                                     m_recordX + 1);
-
-                needRepaint = true;
-            } else if (keyEvent->key() == Qt::Key_Up) {
-                m_recordY = std::max(0, m_recordY - 1);
-
-                needRepaint = true;
-            } else if (keyEvent->key() == Qt::Key_Down) {
-                m_recordY = std::min(m_backgroundRect.height() -
-                                     m_recordHeight, m_recordY + 1);
-
-                needRepaint = true;
-            }
-        }
-
-        if ( !m_needSaveScreenshot) {
-            m_sizeTips->updateTips(QPoint(m_recordX, m_recordY),
-                                   QString("%1X%2").arg(m_recordWidth).arg(m_recordHeight));
-            updateToolBarPos();
-        }
-    }
-
-    if (needRepaint) {
-        update();
+        // Exit on esc
+        exit(1);
+        return;
     }
 
     QLabel::keyPressEvent(keyEvent);
 }
 
-void MainWindow::keyReleaseEvent(QKeyEvent *keyEvent)
-{
-    // NOTE: must be use 'isAutoRepeat' to filter KeyRelease event
-    //send by Qt.
-    bool needRepaint = false;
-    //    if(keyEvent->modifiers() == Qt::NoModifier) {
-    //        QProcess::startDetached("deepin-shortcut-viewer");
-    //    }
+void MainWindow::keyReleaseEvent(QKeyEvent *keyEvent) { }
 
-    if (m_isShapesWidgetExist) {
-        if (keyEvent->key() == Qt::Key_Shift) {
-            m_isShiftPressed =  false;
-            m_shapesWidget->setShiftKeyPressed(m_isShiftPressed);
-        }
-    }
-
-    if (!keyEvent->isAutoRepeat()) {
-        if (keyEvent->key() == Qt::Key_Left || keyEvent->key()
-                == Qt::Key_Right || keyEvent->key() == Qt::Key_Up ||
-                keyEvent->key() == Qt::Key_Down) {
-            needRepaint = true;
-        }
-    }
-    if (needRepaint) {
-        update();
-    }
-    QLabel::keyReleaseEvent(keyEvent);
-}
-
-void MainWindow::mousePressEvent(QMouseEvent *ev)
-{
+void MainWindow::mousePressEvent(QMouseEvent *ev) { 
     if (!m_isShapesWidgetExist) {
         m_dragStartX = ev->x();
         m_dragStartY = ev->y();
@@ -454,14 +201,12 @@ void MainWindow::mousePressEvent(QMouseEvent *ev)
     QLabel::mousePressEvent(ev);
 }
 
-void MainWindow::mouseDoubleClickEvent(QMouseEvent *ev)
-{
+void MainWindow::mouseDoubleClickEvent(QMouseEvent *ev) {
     expressSaveScreenshot();
     QLabel::mouseDoubleClickEvent(ev);
 }
 
-void MainWindow::mouseReleaseEvent(QMouseEvent *ev)
-{
+void MainWindow::mouseReleaseEvent(QMouseEvent *ev) {
     bool needRepaint = false;
 
     if (!m_isShapesWidgetExist) {
@@ -472,17 +217,12 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *ev)
                                    QString("%1X%2").arg(m_recordWidth).arg(m_recordHeight));
         }
 
-        if (m_toolBar->isVisible()) {
-            updateToolBarPos();
-        }
-
         if (!m_isFirstReleaseButton) {
             m_isFirstReleaseButton = true;
 
             m_mouseStatus = ShotMouseStatus::Normal;
             m_zoomIndicator->hide();
 
-            qDebug() << "MainWindow mouseReleaseEvent";
             updateToolBarPos();
             updateCursor(ev);
 
@@ -532,39 +272,29 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *ev)
     QLabel::mouseReleaseEvent(ev);
 }
 
-void MainWindow::hideEvent(QHideEvent *event)
-{
+void MainWindow::hideEvent(QHideEvent *event) {
     qApp->setOverrideCursor(Qt::ArrowCursor);
     QLabel::hideEvent(event);
 }
 
-bool MainWindow::eventFilter(QObject *watched, QEvent *event)
-{
+bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
     if (!m_keyboardGrabbed && this->windowHandle() != NULL) {
         m_keyboardGrabbed = this->windowHandle()->setKeyboardGrabEnabled(true);
-        qDebug() << "m_keyboardGrabbed:" << m_keyboardGrabbed;
     }
 
     return QLabel::eventFilter(watched, event);
 }
 
-void MainWindow::mouseMoveEvent(QMouseEvent *ev)
-{
+void MainWindow::mouseMoveEvent(QMouseEvent *ev) {
     bool needRepaint = false;
 
     if (!m_isShapesWidgetExist) {
         if (m_recordWidth > 0 && m_recordHeight >0 && !m_needSaveScreenshot && this->isVisible()) {
-            m_sizeTips->updateTips(QPoint(m_recordX, m_recordY),
-                                                         QString("%1X%2").arg(m_recordWidth).arg(m_recordHeight));
-
-            if (m_toolBar->isVisible()) {
-                updateToolBarPos();
-                m_zoomIndicator->hide();
-            }
+            m_sizeTips->updateTips(QPoint(m_recordX, m_recordY), QString("%1X%2").arg(m_recordWidth).arg(m_recordHeight));
         }
 
         if (m_isFirstMove) {
-            if (!m_toolBar->isVisible() && !m_isFirstReleaseButton) {
+            if (!m_isFirstReleaseButton) {
                 QPoint curPos = this->cursor().pos();
                 QPoint tmpPos;
                 QPoint topLeft = m_backgroundRect.topLeft() * devicePixelRatioF();
@@ -605,11 +335,8 @@ void MainWindow::mouseMoveEvent(QMouseEvent *ev)
                 if (m_mouseStatus != ShotMouseStatus::Wait && m_dragRecordX >= 0
                 && m_dragRecordY >= 0) {
                     if (m_dragAction == ResizeDirection::Moving && m_moving) {
-                        m_recordX = std::max(std::min(m_dragRecordX + ev->x() - m_dragStartX,
-                                                                                  m_backgroundRect.width() - m_recordWidth), 1);
-                        m_recordY = std::max(std::min(m_dragRecordY + ev->y() - m_dragStartY,
-                                                                                  m_backgroundRect.height() - m_recordHeight), 1);
-
+                        m_recordX = std::max(std::min(m_dragRecordX + ev->x() - m_dragStartX, m_backgroundRect.width() - m_recordWidth), 1);
+                        m_recordY = std::max(std::min(m_dragRecordY + ev->y() - m_dragStartY, m_backgroundRect.height() - m_recordHeight), 1);
                     } else if (m_dragAction == ResizeDirection::TopLeft) {
                         resizeDirection(ResizeDirection::Top, ev);
                         resizeDirection(ResizeDirection::Left, ev);
@@ -667,15 +394,13 @@ void MainWindow::mouseMoveEvent(QMouseEvent *ev)
         }
     }
 
-    if (needRepaint) {
+    if (needRepaint) 
         update();
-    }
 
     QLabel::mouseMoveEvent(ev);
 }
 
-int MainWindow::getDirection(QEvent *event)
-{
+int MainWindow::getDirection(QEvent *event) {
     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
 
     int cursorX = mouseEvent->x();
@@ -730,16 +455,12 @@ int MainWindow::getDirection(QEvent *event)
     }
 }
 
-void MainWindow::paintEvent(QPaintEvent *event)
-{
+void MainWindow::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event);
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    QRect backgroundRect = QRect(0, 0,
-                                 m_backgroundRect.width(), m_backgroundRect.height());
-
-    // FIXME: Under the magnifying glass, it seems to be magnified two times.
+    QRect backgroundRect = QRect(0, 0, m_backgroundRect.width(), m_backgroundRect.height());
 
     m_backgroundPixmap.setDevicePixelRatio(devicePixelRatioF());
     painter.drawPixmap(backgroundRect, m_backgroundPixmap);
@@ -794,9 +515,7 @@ void MainWindow::paintEvent(QPaintEvent *event)
     }
 }
 
-void MainWindow::initShapeWidget(QString type)
-{
-    qDebug() << "show shapesWidget";
+void MainWindow::initShapeWidget(QString type) {
     m_shapesWidget = new ShapesWidget(this);
     m_shapesWidget->setShiftKeyPressed(m_isShiftPressed);
 
@@ -808,22 +527,15 @@ void MainWindow::initShapeWidget(QString type)
     m_shapesWidget->move(m_recordX + 2, m_recordY + 2);
 
     updateToolBarPos();
-    m_toolBar->raise();
     m_needDrawSelectedPoint = false;
     update();
 
-    connect(m_toolBar, &ToolBar::updateColor,
-            m_shapesWidget, &ShapesWidget::setPenColor);
     connect(m_shapesWidget, &ShapesWidget::reloadEffectImg,
             this, &MainWindow::reloadImage);
     connect(this, &MainWindow::deleteShapes, m_shapesWidget,
             &ShapesWidget::deleteCurrentShape);
     connect(m_shapesWidget, &ShapesWidget::requestScreenshot,
             this, &MainWindow::saveScreenshot);
-    connect(m_shapesWidget, &ShapesWidget::shapePressed,
-            m_toolBar, &ToolBar::shapePressed);
-    connect(m_shapesWidget, &ShapesWidget::saveBtnPressed,
-            m_toolBar, &ToolBar::saveBtnPressed);
     connect(m_shapesWidget, &ShapesWidget::requestExit, this, &MainWindow::exitApp);
     connect(this, &MainWindow::unDo, m_shapesWidget, &ShapesWidget::undoDrawShapes);
     connect(this, &MainWindow::saveActionTriggered,
@@ -831,8 +543,7 @@ void MainWindow::initShapeWidget(QString type)
     connect(m_shapesWidget, &ShapesWidget::menuNoFocus, this, &MainWindow::activateWindow);
 }
 
-void MainWindow::updateCursor(QEvent *event)
-{
+void MainWindow::updateCursor(QEvent *event) {
     if (m_mouseStatus == ShotMouseStatus::Normal) {
         QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
 
@@ -893,8 +604,7 @@ void MainWindow::updateCursor(QEvent *event)
     }
 }
 
-void MainWindow::resizeDirection(ResizeDirection direction, QMouseEvent *e)
-{
+void MainWindow::resizeDirection(ResizeDirection direction, QMouseEvent *e) {
     int offsetX = e->x() - m_dragStartX;
     int offsetY = e->y() - m_dragStartY;
 
@@ -927,158 +637,12 @@ void MainWindow::resizeDirection(ResizeDirection direction, QMouseEvent *e)
     }
 }
 
-void MainWindow::fullScreenshot()
-{
-    m_mouseStatus = ShotMouseStatus::Shoting;
-    repaint();
-    qApp->setOverrideCursor(setCursorShape("start"));
-    initDBusInterface();
-    this->setFocus();
-    m_configSettings =  ConfigSettings::instance();
-    installEventFilter(this);
+void MainWindow::fullScreenshot() { }
+void MainWindow::savePath(const QString &path, const bool noNotify) { }
+void MainWindow::saveSpecificedPath(QString path, const bool noNotify) { }
 
-    if (m_hotZoneInterface->isValid())
-        m_hotZoneInterface->asyncCall("EnableZoneDetected", false);
 
-    QPoint curPos = this->cursor().pos();
-    m_swUtil = DScreenWindowsUtil::instance(curPos);
-    m_screenNum = m_swUtil->getScreenNum();
-    m_backgroundRect = m_swUtil->backgroundRect();
-
-    this->move(m_backgroundRect.x(), m_backgroundRect.y());
-    this->setFixedSize(m_backgroundRect.size());
-    m_needSaveScreenshot = true;
-    shotFullScreen();
-    m_toolBar = new ToolBar(this);
-    m_toolBar->hide();
-
-    if (m_hotZoneInterface->isValid())
-        m_hotZoneInterface->asyncCall("EnableZoneDetected",  true);
-
-    emit this->hideScreenshotUI();
-//    DDesktopServices::playSystemSoundEffect(DDesktopServices::SSE_Screenshot);
-//    using namespace utils;
-
-    TempFile::instance()->setFullScreenPixmap(m_resultPixmap);
-    const auto r = saveAction(m_resultPixmap);
-    sendNotify(m_saveIndex, m_saveFileName, r);
-}
-
-void MainWindow::savePath(const QString &path, const bool noNotify)
-{
-    if (!QFileInfo(path).dir().exists()) {
-        exitApp();
-    }
-
-    qDebug() << "path exist!";
-    startScreenshot();
-    m_toolBar->specificedSavePath();
-    m_specificedPath = path;
-
-    connect(m_toolBar, &ToolBar::saveSpecifiedPath, this, [=]{
-        emit releaseEvent();
-        emit saveActionTriggered();
-        m_needSaveScreenshot = true;
-        qDebug() << "toolBar" << m_specificedPath;
-        saveSpecificedPath(m_specificedPath, noNotify);
-    });
-}
-
-void MainWindow::saveSpecificedPath(QString path, const bool noNotify)
-{
-    QString savePath;
-    QString baseName = QFileInfo(path).baseName();
-    QString suffix = QFileInfo(path).completeSuffix();
-
-    if (!QFileInfo(path).isDir() && !baseName.isEmpty())
-    {
-        if (isValidFormat(suffix)) {
-            savePath = path;
-        } else if (suffix.isEmpty()) {
-            savePath = path + ".png";
-        } else {
-            qWarning() << "Invalid image format! Screenshot will quit, suffix:" << suffix;
-            exitApp();
-        }
-        qDebug() << "process savepath1:" << savePath;
-    } else {
-        if (QFileInfo(path).isDir() && !path.endsWith("/")) {
-            path = path + "/";
-        }
-        qDebug() << "path isEmpty!";
-
-        QDateTime currentDate;
-        QString currentTime =  currentDate.currentDateTime().
-                toString("yyyyMMddHHmmss");
-        if (m_selectAreaName.isEmpty()) {
-            savePath = path + QString("%1_%2.png").arg(tr("DeepinScreenshot")).arg(currentTime);
-        } else {
-            savePath = path + QString("%1_%2_%3.png").arg(tr("DeepinScreenshot")).arg(
-                                                                                       m_selectAreaName).arg(currentTime);
-        }
-        qDebug() << "process savepath2: " << savePath;
-    }
-
-    if (m_hotZoneInterface->isValid())
-        m_hotZoneInterface->asyncCall("EnableZoneDetected",  true);
-//    using namespace utils;
-    m_toolBar->setVisible(false);
-    m_sizeTips->setVisible(false);
-
-    shotCurrentImg();
-    m_resultPixmap.save(savePath);
-//    DDesktopServices::playSystemSoundEffect(DDesktopServices::SSE_Screenshot);
-
-    QStringList actions;
-    actions << "_open" << tr("View");
-    QVariantMap hints;
-    QString fileDir = QUrl::fromLocalFile(QFileInfo(savePath).absoluteDir().absolutePath()).toString();
-    QString filePath =  QUrl::fromLocalFile(savePath).toString();
-    QString command;
-    if (QFile("/usr/bin/dde-file-manager").exists()) {
-        command = QString("/usr/bin/dde-file-manager,%1?selectUrl=%2"
-                          ).arg(fileDir).arg(filePath);
-    } else {
-        command = QString("xdg-open,%1").arg(filePath);
-    }
-
-    hints["x-deepin-action-_open"] = command;
-
-    QString summary = QString(tr("Picture has been saved to %1")).arg(savePath);
-
-    if (!noNotify) {
-        m_notifyDBInterface->Notify("Deepin Screenshot", 0,  "deepin-screenshot", "",
-                                    summary, actions, hints, 0);
-    }
-    exitApp();
-}
-
-//void MainWindow::delayScreenshot(int num) {
-//    initDBusInterface();
-//    QString summary = QString(tr("Deepin Screenshot will start after %1 second.").arg(num));
-//    QStringList actions = QStringList();
-//    QVariantMap hints;
-//    if (num >= 2) {
-//        m_notifyDBInterface->Notify("Deepin Screenshot", 0,  "deepin-screenshot", "",
-//                                    summary, actions, hints, 0);
-//        QTimer* timer = new QTimer;
-//        timer->setSingleShot(true);
-//        timer->start(1000*num);
-//        connect(timer, &QTimer::timeout, this, [=]{
-//            m_notifyDBInterface->CloseNotification(0);
-//            initUI();
-//            initShortcut();
-//            this->show();
-//        });
-//    } else {
-//        initUI();
-//        initShortcut();
-//        this->show();
-//    }
-//}
-
-void MainWindow::noNotify()
-{
+void MainWindow::noNotify() {
     m_controlCenterDBInterface = new DBusControlCenter(this);
     m_hotZoneInterface = new DBusZone(this);
     m_interfaceExist = true;
@@ -1090,8 +654,7 @@ void MainWindow::noNotify()
     initShortcut();
 }
 
-void MainWindow::topWindow()
-{
+void MainWindow::topWindow() {
     initOriginUI();
     this->show();
     initSecondUI();
@@ -1099,7 +662,6 @@ void MainWindow::topWindow()
 
     if (m_screenNum == 0) {
         m_windowRects  = m_swUtil->windowsRect();
-
         m_recordX = m_windowRects[0].x();
         m_recordY = m_windowRects[0].y();
         m_recordWidth = m_windowRects[0].width();
@@ -1115,33 +677,18 @@ void MainWindow::topWindow()
     emit this->hideScreenshotUI();
 
     const qreal ratio = this->devicePixelRatioF();
-    QRect target( m_recordX * ratio,
-                  m_recordY * ratio,
-                  m_recordWidth * ratio,
-                  m_recordHeight * ratio );
+    QRect target( m_recordX * ratio, m_recordY * ratio, m_recordWidth * ratio, m_recordHeight * ratio );
 
-//    using namespace utils;
     QPixmap screenShotPix =  m_backgroundPixmap.copy(target);
-    qDebug() << "topWindow grabImage is null:" << m_backgroundPixmap.isNull()
-             << QRect(m_recordX, m_recordY, m_recordWidth, m_recordHeight)
-             << "\n"
-             << "screenShot is null:" << screenShotPix.isNull();
     m_needSaveScreenshot = true;
-    //    DDesktopServices::playSystemSoundEffect(DDesktopServices::SSE_Screenshot);
 
     const auto r = saveAction(screenShotPix);
     sendNotify(m_saveIndex, m_saveFileName, r);
 }
 
-void MainWindow::expressSaveScreenshot()
-{
+void MainWindow::expressSaveScreenshot() {
     if (m_specificedPath.isEmpty()) {
-        qDebug() << "specificedPath isEmpty!";
         saveScreenshot();
-    } else {
-        qDebug() << "specificedPath isEmpty!XCVBN";
-        m_toolBar->specificedSavePath();
-        emit m_toolBar->saveSpecifiedPath();
     }
 }
 
@@ -1158,8 +705,7 @@ void MainWindow::startScreenshot()
     initShortcut();
 }
 
-QPixmap MainWindow::getPixmapofRect(const QRect &rect)
-{
+QPixmap MainWindow::getPixmapofRect(const QRect &rect) {
     QRect r(rect.topLeft() * devicePixelRatioF(), rect.size());
 
     QList<QScreen*> screenList = qApp->screens();
@@ -1172,8 +718,7 @@ QPixmap MainWindow::getPixmapofRect(const QRect &rect)
     return QPixmap();
 }
 
-void MainWindow::initBackground()
-{
+void MainWindow::initBackground() {
     m_backgroundPixmap = getPixmapofRect(m_backgroundRect);
     m_resultPixmap = m_backgroundPixmap;
     TempFile::instance()->setFullScreenPixmap(m_backgroundPixmap);
@@ -1183,8 +728,7 @@ void MainWindow::shotFullScreen() {
     m_resultPixmap = getPixmapofRect(m_backgroundRect);
 }
 
-void MainWindow::shotCurrentImg()
-{
+void MainWindow::shotCurrentImg() {
     if (m_recordWidth == 0 || m_recordHeight == 0)
         return;
 
@@ -1196,8 +740,6 @@ void MainWindow::shotCurrentImg()
     QTimer::singleShot(100, &eventloop1, SLOT(quit()));
     eventloop1.exec();
 
-    qDebug() << "shotCurrentImg shotFullScreen";
-//    using namespace utils;
     shotFullScreen();
     if (m_isShapesWidgetExist) {
         m_shapesWidget->hide();
@@ -1215,18 +757,12 @@ void MainWindow::shotCurrentImg()
     m_resultPixmap = m_resultPixmap.copy(target);
 }
 
-void MainWindow::shotImgWidthEffect()
-{
+void MainWindow::shotImgWidthEffect() {
     if (m_recordWidth == 0 || m_recordHeight == 0)
         return;
 
     update();
-
-//    QEventLoop eventloop;
-//    QTimer::singleShot(100, &eventloop, SLOT(quit()));
-//    eventloop.exec();
-
-    qDebug() << m_toolBar->isVisible() << m_sizeTips->isVisible();
+    
     const qreal ratio = devicePixelRatioF();
     const QRect rect(m_shapesWidget->geometry().topLeft() * ratio, m_shapesWidget->geometry().size() * ratio);
     m_resultPixmap = m_backgroundPixmap.copy(rect);
@@ -1234,247 +770,19 @@ void MainWindow::shotImgWidthEffect()
     update();
 }
 
-void MainWindow::saveScreenshot()
-{
+void MainWindow::saveScreenshot() {
     const qreal ratio = this->devicePixelRatioF();
     std::cout << m_recordX*ratio << ";" << m_recordY*ratio << ";" << m_recordWidth*ratio << ";" << m_recordHeight*ratio << std::endl;
-
-    emit releaseEvent();
-    emit saveActionTriggered();
-
-//    DDesktopServices::playSystemSoundEffect(DDesktopServices::SSE_Screenshot);
-    if (m_hotZoneInterface->isValid())
-        m_hotZoneInterface->asyncCall("EnableZoneDetected",  true);
-    m_needSaveScreenshot = true;
-
-    m_toolBar->setVisible(false);
-    m_sizeTips->setVisible(false);
-
-    shotCurrentImg();
+    exitApp();
 }
 
-bool MainWindow::saveAction(const QPixmap &pix)
-{
-    emit releaseEvent();
-
-//    using namespace utils;
-    QPixmap screenShotPix = pix;
-    QDateTime currentDate;
-    QString currentTime =  currentDate.currentDateTime().
-            toString("yyyyMMddHHmmss");
-    m_saveFileName = "";
-
-    QStandardPaths::StandardLocation saveOption = QStandardPaths::TempLocation;
-    bool copyToClipboard = false;
-
-    std::pair<bool, SaveAction> temporarySaveAction = ConfigSettings::instance()->getTemporarySaveAction();
-    if (temporarySaveAction.first) {
-        m_saveIndex = temporarySaveAction.second;
-    }
-    else {
-        m_saveIndex = ConfigSettings::instance()->value("save", "save_op").value<SaveAction>();
-    }
-    switch (m_saveIndex) {
-    case SaveToDesktop: {
-        saveOption = QStandardPaths::DesktopLocation;
-        ConfigSettings::instance()->setValue("common", "default_savepath", QStandardPaths::writableLocation(
-                                                 QStandardPaths::DesktopLocation));
-        break;
-    }
-    case AutoSave: {
-        QString defaultSaveDir = ConfigSettings::instance()->value("common", "default_savepath").toString();
-        if (defaultSaveDir.isEmpty()) {
-            saveOption = QStandardPaths::DesktopLocation;
-        } else if (defaultSaveDir == "clipboard") {
-            copyToClipboard = true;
-            m_saveIndex = SaveToSpecificDir;
-        } else {
-            if (m_selectAreaName.isEmpty()) {
-                m_saveFileName = QString("%1/%2_%3.png").arg(defaultSaveDir).arg(tr(
-                                                                                     "DeepinScreenshot")).arg(currentTime);
-            } else {
-                m_saveFileName = QString("%1/%2_%3_%4.png").arg(defaultSaveDir).arg(tr(
-                                                                                        "DeepinScreenshot")).arg(m_selectAreaName).arg(currentTime);
-            }
-        }
-        break;
-    }
-    case SaveToSpecificDir: {
-        this->hide();
-        this->releaseKeyboard();
-
-        QString path = ConfigSettings::instance()->value("common", "default_savepath").toString();
-        QString fileName = m_selectAreaName;
-
-        if (path.isEmpty() || !QDir(path).exists()) {
-            path = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-        }
-
-        if (fileName.isEmpty()) {
-            fileName = QString("%1_%2").arg(tr("DeepinScreenshot")).arg(currentTime);
-        }
-        else {
-            fileName = QString("%1_%2_%3").arg(tr("DeepinScreenshot")).arg(m_selectAreaName).arg(currentTime);
-        }
-
-        QString lastFileName = QString("%1/%2.png").arg(path).arg(fileName);
-
-        QFileDialog fileDialog;
-        m_saveFileName =  fileDialog.getSaveFileName(this, "Save",  lastFileName,
-                                                     tr("PNG (*.png);;JPEG (*.jpg *.jpeg);; BMP (*.bmp);; PGM (*.pgm);;"
-                                                        "XBM (*.xbm);;XPM(*.xpm)"));
-
-        if (m_saveFileName.isEmpty() || QFileInfo(m_saveFileName).isDir())
-            return false;
-
-        QString fileSuffix = QFileInfo(m_saveFileName).completeSuffix();
-        if (fileSuffix.isEmpty()) {
-            m_saveFileName = m_saveFileName + ".png";
-        } else if ( !isValidFormat(fileSuffix)) {
-            qWarning() << "The fileName has invalid suffix!" << fileSuffix << m_saveFileName;
-            return false;
-        }
-
-        ConfigSettings::instance()->setValue("common", "default_savepath",
-                                             QFileInfo(m_saveFileName).dir().absolutePath());
-        break;
-    }
-    case SaveToClipboard: {
-        copyToClipboard = true;
-        ConfigSettings::instance()->setValue("common", "default_savepath",   "clipboard");
-        break;
-    }
-    case SaveToAutoClipboard: {
-        copyToClipboard = true;
-        QString defaultSaveDir = ConfigSettings::instance()->value("common", "default_savepath").toString();
-        if (defaultSaveDir.isEmpty()) {
-            saveOption = QStandardPaths::DesktopLocation;
-        } else if (defaultSaveDir == "clipboard") {
-            m_saveIndex = SaveToSpecificDir;
-        } else  {
-            if (m_selectAreaName.isEmpty()) {
-                m_saveFileName = QString("%1/%2_%3.png").arg(defaultSaveDir).arg(tr(
-                                                                                     "DeepinScreenshot")).arg(currentTime);
-            } else {
-                m_saveFileName = QString("%1/%2_%3_%4.png").arg(defaultSaveDir).arg(tr(
-                                                                                        "DeepinScreenshot")).arg(m_selectAreaName).arg(currentTime);
-            }
-        }
-        break;
-    }
-    default:
-        break;
-    }
-
-    int toolBarSaveQuality = std::min(ConfigSettings::instance()->value("save",
-                                                            "save_quality").toInt(), 100);
-
-    if (toolBarSaveQuality != 100) {
-       qreal saveQuality = qreal(toolBarSaveQuality)*5/1000 + 0.5;
-
-       int pixWidth = screenShotPix.width();
-       int pixHeight = screenShotPix.height();
-        screenShotPix = screenShotPix.scaled(pixWidth*saveQuality, pixHeight*saveQuality,
-                                                                             Qt::KeepAspectRatio, Qt::FastTransformation);
-        screenShotPix = screenShotPix.scaled(pixWidth,  pixHeight,
-                                                                            Qt::KeepAspectRatio, Qt::FastTransformation);
-    }
-
-    if (m_saveIndex == SaveToSpecificDir && m_saveFileName.isEmpty()) {
-        return false;
-    } else if (m_saveIndex == SaveToSpecificDir || !m_saveFileName.isEmpty()) {
-        if (!screenShotPix.save(m_saveFileName,  QFileInfo(m_saveFileName).suffix().toLocal8Bit()))
-            return false;
-    } else if (saveOption != QStandardPaths::TempLocation && m_saveFileName.isEmpty()) {
-        QString savePath = QStandardPaths::writableLocation(saveOption);
-        QDir saveDir(savePath);
-        if (!saveDir.exists()) {
-            bool mkdirSucc = saveDir.mkpath(".");
-            if (!mkdirSucc) {
-                qCritical() << "Save path not exist and cannot be created:" << savePath;
-                qCritical() << "Fall back to temp location!";
-                savePath = QDir::tempPath();
-            }
-        }
-        if (m_selectAreaName.isEmpty()) {
-            m_saveFileName = QString("%1/%2_%3.png").arg(savePath, tr("DeepinScreenshot"), currentTime);
-        } else {
-            m_saveFileName = QString("%1/%2_%3_%4.png").arg(savePath, tr("DeepinScreenshot"), m_selectAreaName, currentTime);
-        }
-        if (!screenShotPix.save(m_saveFileName,  "PNG"))
-            return false;
-    }
-
-    if (copyToClipboard) {
-        Q_ASSERT(!screenShotPix.isNull());
-        QClipboard* cb = qApp->clipboard();
-        cb->setPixmap(screenShotPix, QClipboard::Clipboard);
-    }
-
+bool MainWindow::saveAction(const QPixmap &pix) {
     return true;
 }
 
-void MainWindow::sendNotify(SaveAction saveAction, QString saveFilePath, const bool succeed)
-{
-    // failed notify
-    if (!succeed)
-    {
-        const auto tips = tr("Save failed. Please save it in your home directory.");
-        m_notifyDBInterface->Notify("Deepin Screenshot", 0, "deepin-screenshot", QString(), tips, QStringList(), QVariantMap(), 0);
+void MainWindow::sendNotify(SaveAction saveAction, QString saveFilePath, const bool succeed) { }
 
-	exit(0);
-    }
-
-    QDBusInterface remote_dde_notify_obj("com.deepin.dde.Notification", "/com/deepin/dde/Notification",
-                                         "com.deepin.dde.Notification");
-
-    const bool remote_dde_notify_obj_exist = remote_dde_notify_obj.isValid();
-
-    QStringList actions;
-    QVariantMap hints;
-
-    if (remote_dde_notify_obj_exist) {
-        actions << "_open" << tr("View");
-
-        QString fileDir  = QUrl::fromLocalFile(QFileInfo(saveFilePath).absoluteDir().absolutePath()).toString();
-        QString filePath = QUrl::fromLocalFile(saveFilePath).toString();
-        QString command;
-        if (QFile("/usr/bin/dde-file-manager").exists()) {
-            command = QString("/usr/bin/dde-file-manager,%1?selectUrl=%2").arg(fileDir).arg(filePath);
-        }
-        else {
-            command = QString("xdg-open,%1").arg(filePath);
-        }
-
-        hints["x-deepin-action-_open"] = command;
-    }
-
-    qDebug() << "saveFilePath:" << saveFilePath;
-
-    QString summary;
-    if (saveAction == SaveAction::SaveToClipboard) {
-        summary = QString(tr("Picture has been saved to clipboard"));
-    } else {
-        summary = QString(tr("Picture has been saved to %1")).arg(saveFilePath);
-    }
-
-    if (saveAction == SaveAction::SaveToClipboard && !m_noNotify) {
-        QVariantMap emptyMap;
-        m_notifyDBInterface->Notify("Deepin Screenshot", 0,  "deepin-screenshot", "",
-                                    summary,  QStringList(), emptyMap, 0);
-    }  else if ( !m_noNotify &&  !(m_saveIndex == SaveAction::SaveToSpecificDir && m_saveFileName.isEmpty())) {
-        m_notifyDBInterface->Notify("Deepin Screenshot", 0,  "deepin-screenshot", "",
-                                    summary, actions, hints, 0);
-    }
-
-    QTimer::singleShot(2, [=]{
-        exitApp();
-    });
-
-}
-
-void MainWindow::reloadImage(QString effect)
-{
+void MainWindow::reloadImage(QString effect) {
     //*save tmp image file
     shotImgWidthEffect();
     //using namespace utils;
@@ -1487,10 +795,8 @@ void MainWindow::reloadImage(QString effect)
 
     if (effect == "blur") {
         if (!tmpImg.isNull()) {
-            tmpImg = tmpImg.scaled(imgWidth/radius, imgHeight/radius,
-                                   Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-            tmpImg = tmpImg.scaled(imgWidth, imgHeight, Qt::IgnoreAspectRatio,
-                                   Qt::SmoothTransformation);
+            tmpImg = tmpImg.scaled(imgWidth/radius, imgHeight/radius, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+            tmpImg = tmpImg.scaled(imgWidth, imgHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
             tempFile->setBlurPixmap(tmpImg);
         }
     } else {
@@ -1503,8 +809,7 @@ void MainWindow::reloadImage(QString effect)
     }
 }
 
-void MainWindow::onViewShortcut()
-{
+void MainWindow::onViewShortcut() {
     QRect rect = window()->geometry();
     QPoint pos(rect.x() + rect.width()/2, rect.y() + rect.height()/2);
     Shortcut sc;
@@ -1520,45 +825,21 @@ void MainWindow::onViewShortcut()
     connect(shortcutViewProc, SIGNAL(finished(int)), shortcutViewProc, SLOT(deleteLater()));
 }
 
-void MainWindow::onHelp()
-{
-    QDBusInterface iface("com.deepin.Manual.Open",
-                         "/com/deepin/Manual/Open",
-                         "com.deepin.Manual.Open");
+void MainWindow::onHelp() {
+    QDBusInterface iface("com.deepin.Manual.Open", "/com/deepin/Manual/Open", "com.deepin.Manual.Open");
     if (iface.isValid()) {
         iface.call("ShowManual", "deepin-screenshot");
         exitApp();
-    } else {
-        qWarning() << "manual service not available, cannot open manual";
     }
 }
 
-void MainWindow::exitApp()
-{
-    if (m_interfaceExist && nullptr != m_hotZoneInterface)
-    {
+void MainWindow::exitApp() {
+    if (m_interfaceExist && nullptr != m_hotZoneInterface) {
         if (m_hotZoneInterface->isValid())
             m_hotZoneInterface->asyncCall("EnableZoneDetected",  true);
     }
+
     qApp->quit();
 }
 
-void MainWindow::updateToolBarPos()
-{
-    QPoint toolbarPoint;
-    toolbarPoint = QPoint(m_recordX + m_recordWidth - m_toolBar->width(),
-                          std::max(m_recordY + m_recordHeight + TOOLBAR_Y_SPACING, 0));
-
-    if (m_toolBar->width() > m_recordX + m_recordWidth) {
-        toolbarPoint.setX(m_recordX + 8);
-    }
-    if (toolbarPoint.y()>= m_backgroundRect.y() + m_backgroundRect.height()
-            - m_toolBar->height() - 28) {
-        if (m_recordY > 28*2 + 10) {
-            toolbarPoint.setY(m_recordY - m_toolBar->height() - TOOLBAR_Y_SPACING);
-        } else {
-            toolbarPoint.setY(m_recordY + TOOLBAR_Y_SPACING);
-        }
-    }
-    m_toolBar->showAt(toolbarPoint);
-}
+void MainWindow::updateToolBarPos() { }

@@ -52,8 +52,6 @@ ConfigSettings::ConfigSettings(QObject *parent)
 
     setValue("effect", "is_blur", false);
     setValue("effect", "is_mosaic", false);
-
-    qDebug() << "Setting file:" << m_settings->fileName();
 }
 
 ConfigSettings* ConfigSettings::m_configSettings = nullptr;
@@ -86,7 +84,6 @@ void ConfigSettings::setValue(const QString &group, const QString &key,
         emit straightLineConfigChanged(val.toBool());
     }
 
-    qDebug() << "ConfigSettings:" << group << key << val;
 }
 
 QVariant ConfigSettings::value(const QString &group, const QString &key,

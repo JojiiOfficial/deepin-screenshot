@@ -32,7 +32,6 @@
 #include <QHBoxLayout>
 #include <QSlider>
 #include <QStyleFactory>
-#include <QDebug>
 
 DWIDGET_USE_NAMESPACE
 
@@ -511,12 +510,10 @@ void SubToolBar::switchContent(QString shapeType) {
     } else if (shapeType == "saveList") {
         setCurrentWidget(m_saveLabel);
     }
-    qDebug() << "subToolBar shape:" << shapeType;
 }
 
 void SubToolBar::setSaveOption(SaveAction action) {
     if (QGuiApplication::keyboardModifiers().testFlag(Qt::ShiftModifier)) {
-        qDebug() << "Shift key holded: temporary action, will not remember the save_op.";
         ConfigSettings::instance()->setTemporarySaveAction(std::pair<bool, SaveAction>(true, action));
     } else {
         ConfigSettings::instance()->setValue("save", "save_op", action);

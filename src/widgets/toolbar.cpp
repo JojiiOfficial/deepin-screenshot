@@ -22,7 +22,6 @@
 #include "src/utils/saveutils.h"
 
 #include <QPainter>
-#include <QDebug>
 #include <QApplication>
 #include <QCursor>
 #include <QGraphicsDropShadowEffect>
@@ -52,7 +51,6 @@ ToolBarWidget::ToolBarWidget(QWidget *parent)
     setMaskColor(QColor(255, 255, 255, 204));
     setFixedSize(TOOLBAR_WIDGET_SIZE);
 
-    qDebug() << "~~~~~~" << this->size();
     m_hSeparatorLine = new QLabel(this);
     m_hSeparatorLine->setObjectName("HorSeparatorLine");
     m_hSeparatorLine->setFixedHeight(1);
