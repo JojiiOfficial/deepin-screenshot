@@ -46,6 +46,7 @@
 
 #include "src/utils/screenutils.h"
 #include "src/utils/tempfile.h"
+#include <iostream>
 
 DWIDGET_USE_NAMESPACE
 
@@ -1235,6 +1236,9 @@ void MainWindow::shotImgWidthEffect()
 
 void MainWindow::saveScreenshot()
 {
+    const qreal ratio = this->devicePixelRatioF();
+    std::cout << m_recordX*ratio << ";" << m_recordY*ratio << ";" << m_recordWidth*ratio << ";" << m_recordHeight*ratio << std::endl;
+
     emit releaseEvent();
     emit saveActionTriggered();
 
@@ -1247,9 +1251,6 @@ void MainWindow::saveScreenshot()
     m_sizeTips->setVisible(false);
 
     shotCurrentImg();
-
-    const bool r = saveAction(m_resultPixmap);
-    sendNotify(m_saveIndex, m_saveFileName, r);
 }
 
 bool MainWindow::saveAction(const QPixmap &pix)
