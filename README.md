@@ -20,7 +20,15 @@ A screen area selection tool extracted from the deepin-screenshot tool
 - secord, make a directory: build; run `cmake ../`; `make`; `make install`
 
 ## Usage
-Run the command: `deepin-screenshot`
+Run the command: `select-area`<br>
+
+Parameters:
+1. x
+2. y
+3. width
+4. height
+5. screen nr
+<br>
 
 ## License
 

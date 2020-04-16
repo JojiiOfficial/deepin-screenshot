@@ -11,7 +11,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_FLAGS "-g -Wall -g -fPIE -pie")
 set(CMAKE_EXE_LINKER_FLAGS "-fPIE -pie")
-set(BIN_NAME deepin-screenshot)
+set(BIN_NAME select-area)
 
 # Sources files
 set(SRCS
