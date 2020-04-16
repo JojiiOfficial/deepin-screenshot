@@ -31,69 +31,17 @@
 
 DWM_USE_NAMESPACE
 
-Screenshot::Screenshot(QObject *parent)
-    : QObject(parent)
-{
-}
+Screenshot::Screenshot(QObject *parent) : QObject(parent) { }
 
 void Screenshot::initUI() {
     m_eventContainer = new EventContainer(this);
     m_window = new MainWindow;
 }
 
-void Screenshot::startScreenshot()
-{
+void Screenshot::startScreenshot() {
     initUI();
     m_window->show();
     m_window->startScreenshot();
-}
-
-void Screenshot::delayScreenshot(double num)
-{
-    QString summary = QString(tr("Deepin Screenshot will start after %1 seconds").arg(num));
-    QStringList actions = QStringList();
-    QVariantMap hints;
-    DBusNotify* notifyDBus = new DBusNotify(this);
-    if (num >= 2) {
-        notifyDBus->Notify("Deepin Screenshot", 0,  "deepin-screenshot", "",
-                                    summary, actions, hints, 0);
-    }
-
-    QTimer* timer = new QTimer;
-    timer->setSingleShot(true);
-    timer->start(int(1000*num));
-    connect(timer, &QTimer::timeout, this, [=]{
-        notifyDBus->CloseNotification(0);
-        startScreenshot();
-    });
-}
-
-void Screenshot::fullscreenScreenshot()
-{
-    initUI();
-    m_window->show();
-    m_window->fullScreenshot();
-}
-
-void Screenshot::topWindowScreenshot()
-{
-    initUI();
-    m_window->show();
-    m_window->topWindow();
-}
-
-void Screenshot::noNotifyScreenshot()
-{
-    initUI();
-    m_window->show();
-    m_window->noNotify();
-}
-
-void Screenshot::savePathScreenshot(const QString &path, const bool noNotify)
-{
-    initUI();
-    m_window->show();
-    m_window->savePath(path, noNotify);
 }
 
 Screenshot::~Screenshot() {}

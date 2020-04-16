@@ -31,66 +31,47 @@ DWIDGET_USE_NAMESPACE
 #define QT_NO_DEBUG_OUTPUT
 
 // Don't log anything
-void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
-{
-}
+void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg) { }
 
-int main(int argc, char *argv[])
-{
-#if defined(STATIC_LIB)
-    DWIDGET_INIT_RESOURCE();
-#endif
+int main(int argc, char *argv[]) {
+    #if defined(STATIC_LIB)
+        DWIDGET_INIT_RESOURCE();
+    #endif
 
     qInstallMessageHandler(myMessageOutput);
     DApplication::loadDXcbPlugin();
 
-     DApplication a(argc, argv);
-     a.loadTranslator(QList<QLocale>() << QLocale::system());
-     a.setApplicationName("deepin-screenshot-selection");
-     a.setApplicationVersion("4.0");
-     a.setTheme("dark");
-     a.setQuitOnLastWindowClosed(true);
-     a.setAttribute(Qt::AA_UseHighDpiPixmaps);
+    DApplication a(argc, argv);
+    a.loadTranslator(QList<QLocale>() << QLocale::system());
+    a.setApplicationName("deepin-screenshot-selection");
+    a.setApplicationVersion("4.0");
+    a.setTheme("dark");
+    a.setQuitOnLastWindowClosed(true);
+    a.setAttribute(Qt::AA_UseHighDpiPixmaps);
+    using namespace Dtk::Core;
+    Dtk::Core::DLogManager::registerConsoleAppender();
+    Dtk::Core::DLogManager::registerFileAppender();
 
-     using namespace Dtk::Core;
-     Dtk::Core::DLogManager::registerConsoleAppender();
-     Dtk::Core::DLogManager::registerFileAppender();
+    QCommandLineOption dbusOption(QStringList() << "u" << "dbus", "Start  from dbus.");
+    QCommandLineParser cmdParser;
+    cmdParser.setApplicationDescription("deepin-screenshot");
+    cmdParser.addHelpOption();
+    cmdParser.addVersionOption();
+    cmdParser.addOption(dbusOption);
+    cmdParser.process(a);
 
-     QCommandLineOption  delayOption(QStringList() << "d" << "delay",
-                                                                             "Take a screenshot after NUM seconds.", "NUM");
-     QCommandLineOption fullscreenOption(QStringList() << "f" << "fullscreen",
-                                                                                "Take a screenshot the whole screen.");
-     QCommandLineOption topWindowOption(QStringList() << "w" << "top-window",
-                                                                             "Take a screenshot of the most top window.");
-     QCommandLineOption savePathOption(QStringList() << "s" << "save-path",
-                                                                             "Specify a path to save the screenshot.", "PATH");
-     QCommandLineOption prohibitNotifyOption(QStringList() << "n" << "no-notification",
-                                                                              "Don't send notifications.");
-     QCommandLineOption iconOption(QStringList() << "i" << "icon",
-                                                                           "Indicate that this program's started by clicking.");
-    QCommandLineOption dbusOption(QStringList() << "u" << "dbus",
-                                                                            "Start  from dbus.");
-     QCommandLineParser cmdParser;
-     cmdParser.setApplicationDescription("deepin-screenshot");
-     cmdParser.addHelpOption();
-     cmdParser.addVersionOption();
-     cmdParser.addOption(dbusOption);
-     cmdParser.process(a);
-
-     Screenshot w;
-
-     DBusScreenshotService dbusService (&w);
-     Q_UNUSED(dbusService);
-     //Register Screenshot's dbus service.
-     QDBusConnection conn = QDBusConnection::sessionBus();
-     if (!conn.registerService("com.deepin.Screenshot") ||
-             !conn.registerObject("/com/deepin/Screenshot", &w)) {
-
+    Screenshot w;
+    DBusScreenshotService dbusService (&w);
+    Q_UNUSED(dbusService);
+    // Register Screenshot's dbus service.
+    QDBusConnection conn = QDBusConnection::sessionBus();
+    if (!conn.registerService("com.deepin.Screenshot") ||
+            !conn.registerObject("/com/deepin/Screenshot", &w)) {
          qApp->quit();
-         return 0;
-     }
+        return 0;
+    }
 
     w.startScreenshot();
 
-     return a.exec();
+    return a.exec();
 }

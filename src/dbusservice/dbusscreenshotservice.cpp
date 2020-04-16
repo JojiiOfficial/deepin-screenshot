@@ -50,9 +50,7 @@ DBusScreenshotService::DBusScreenshotService(Screenshot *parent)
     setAutoRelaySignals(true);
 }
 
-DBusScreenshotService::~DBusScreenshotService()
-{
-    // destructor
+DBusScreenshotService::~DBusScreenshotService() {
 }
 
 void DBusScreenshotService::setSingleInstance(bool instance) {
@@ -64,49 +62,4 @@ void DBusScreenshotService::StartScreenshot() {
     if (!m_singleInstance)
         parent()->startScreenshot();
     m_singleInstance = true;
-}
-
-void DBusScreenshotService::DelayScreenshot(qlonglong in0)
-{
-    
-    // handle method call com.deepin.Screenshot.DelayScreenshot
-    if (!m_singleInstance)
-        parent()->delayScreenshot(in0);
-    m_singleInstance = true;
-}
-
-void DBusScreenshotService::NoNotifyScreenshot()
-{
-     
-    // handle method call com.deepin.Screenshot.NoNotify
-     if (!m_singleInstance)
-        parent()->noNotifyScreenshot();
-     m_singleInstance = true;
-}
-
-void DBusScreenshotService::TopWindowScreenshot()
-{
-     
-    // handle method call com.deepin.Screenshot.TopWindow
-     if (!m_singleInstance)
-        parent()->topWindowScreenshot();
-     m_singleInstance = true;
-}
-
-void DBusScreenshotService::FullscreenScreenshot()
-{
-     
-    // handle method call com.deepin.Screenshot.Fullscreenshot
-     if (!m_singleInstance)
-        parent()->fullscreenScreenshot();
-     m_singleInstance = true;
-}
-
-void DBusScreenshotService::SavePathScreenshot(const QString &in0, const bool noNotify)
-{
-     
-    // handle method call com.deepin.Screenshot.SavePath
-     if (!m_singleInstance)
-        parent()->savePathScreenshot(in0, noNotify);
-     m_singleInstance = true;
 }

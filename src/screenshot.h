@@ -31,11 +31,6 @@ public:
 
 public slots:
     void startScreenshot();
-    void delayScreenshot(double num);
-    void fullscreenScreenshot();
-    void topWindowScreenshot();
-    void noNotifyScreenshot();
-    void savePathScreenshot(const QString &path, const bool noNotify);
 
 private:
     void initUI();
