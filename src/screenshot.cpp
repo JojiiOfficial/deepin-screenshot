@@ -32,14 +32,12 @@
 DWM_USE_NAMESPACE
 
 Screenshot::Screenshot(QObject *parent) : QObject(parent) { }
-
-void Screenshot::initUI() {
-    m_eventContainer = new EventContainer(this);
-    m_window = new MainWindow;
-}
+void Screenshot::initUI() {}
 
 void Screenshot::startScreenshot() {
-    initUI();
+    m_eventContainer = new EventContainer(this);
+    m_window = new MainWindow;
+
     m_window->show();
     m_window->startScreenshot();
 }

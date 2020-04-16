@@ -53,12 +53,10 @@ int main(int argc, char *argv[]) {
     Dtk::Core::DLogManager::registerConsoleAppender();
     Dtk::Core::DLogManager::registerFileAppender();
 
-    QCommandLineOption dbusOption(QStringList() << "u" << "dbus", "Start  from dbus.");
     QCommandLineParser cmdParser;
-    cmdParser.setApplicationDescription("deepin-screenshot");
+    cmdParser.setApplicationDescription("select-area");
     cmdParser.addHelpOption();
     cmdParser.addVersionOption();
-    cmdParser.addOption(dbusOption);
     cmdParser.process(a);
 
     Screenshot w;
