@@ -1,10 +1,10 @@
-# Deepin screenshot
+# Deepin screenshot - Area select
 
 ## Description
 
-This is a default screenshot app for Linux Deepin.
+A screen area selection tool extracted from the deepin-screenshot tool
 
-## Dependencies
+## Dependencies (same as deepin-screenshot)
 
 - Qt (>=5.6),
 - debhelper (>=9),
@@ -16,31 +16,11 @@ This is a default screenshot app for Linux Deepin.
 
 ## Installation
 
-- On the Deepin operation system: the deepin screenshot is published within!
-- On other operation system, you could download the source code of deepin screenshot:
-    - firstly, install the dependencies rightly;
-    - secondly, run `cd deepin-screenshot`;
-    - thirdly, make a directory: build; run `cmake ../`; `make`; `make install`
+- first, install the dependencies rightly;
+- secord, make a directory: build; run `cmake ../`; `make`; `make install`
 
 ## Usage
 Run the command: `deepin-screenshot`
-
-## Getting help
-
-Any usage issues can ask for help via
-
-* [Official Forum](https://bbs.deepin.org/)
-* [Developer Center](https://github.com/linuxdeepin/developer-center)
-* [WiKi](https://wiki.deepin.org/)
-* [Gitter](https://gitter.im/orgs/linuxdeepin/rooms)
-* [IRC channel](https://webchat.freenode.net/?channels=deepin)
-
-## Getting involved
-
-We encourage you to report issues and contribute changes
-
-* [Contribution guide for developers](https://github.com/linuxdeepin/developer-center/wiki/Contribution-Guidelines-for-Developers-en). (English)
-* [开发者代码贡献指南](https://github.com/linuxdeepin/developer-center/wiki/Contribution-Guidelines-for-Developers) (中文)
 
 ## License
 
