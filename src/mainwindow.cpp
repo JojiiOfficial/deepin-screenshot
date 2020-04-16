@@ -746,8 +746,10 @@ void MainWindow::saveScreenshot() {
 
     int x = abs(widgetRect.x() + m_recordX * ratio);
     int y = abs(m_recordY * ratio + widgetRect.y());
-
-    std::cout << x << ";" << y << ";" << m_recordWidth*ratio << ";" << m_recordHeight*ratio << ";" << m_screenNum << std::endl;
+    int width = m_recordWidth*ratio;
+    int height = m_recordHeight*ratio;
+    
+    std::cout << x << ";" << y << ";" << width << ";" << height << ";" << m_screenNum << std::endl;
     exitApp();
 }
 
